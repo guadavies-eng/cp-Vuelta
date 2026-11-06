@@ -18,18 +18,7 @@
   --warn:#8a6000;--warn-bg:#fff5d6;--radius:8px;
   --shadow:0 1px 4px rgba(30,45,90,.10);
 }
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#10131f;--bg2:#181d30;--fg:#dde2f5;--fg2:#8892b8;
-  --border:#252d4a;--accent:#4d80e8;--accent2:#1a2340;
-  --ok:#2eb568;--ok-bg:#0d2e1c;--err:#e05555;--err-bg:#2a0f0f;
-  --warn:#d4a520;--warn-bg:#2a2000;color-scheme:dark;
-}}
-:root[data-theme="dark"]{
-  --bg:#10131f;--bg2:#181d30;--fg:#dde2f5;--fg2:#8892b8;
-  --border:#252d4a;--accent:#4d80e8;--accent2:#1a2340;
-  --ok:#2eb568;--ok-bg:#0d2e1c;--err:#e05555;--err-bg:#2a0f0f;
-  --warn:#d4a520;--warn-bg:#2a2000;color-scheme:dark;
-}
+/* Tema siempre claro */
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);
   padding:20px max(16px,env(safe-area-inset-left));font-size:14px;}
@@ -66,28 +55,25 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg)
 .cod-wrap{margin-top:10px;display:none;}
 .hint{font-size:.67rem;color:var(--fg2);margin-top:3px;}
 
-/* table */
-.tbl-wrap{overflow-x:auto;}
-table{width:100%;border-collapse:collapse;min-width:640px;}
-thead th{font-size:.63rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
-  color:var(--fg2);padding:6px 6px;border-bottom:2px solid var(--border);
-  white-space:nowrap;text-align:left;background:var(--bg);}
-tbody tr{border-bottom:1px solid var(--border);}
-tbody tr:last-child{border-bottom:none;}
-tbody td{padding:4px 5px;}
-td.rn{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--fg2);
-  text-align:center;width:28px;}
+/* wagon cards */
+.wagon-list{display:flex;flex-direction:column;gap:10px;}
+.wcard{background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:12px;position:relative;}
+.wcard-num{font-size:.62rem;font-weight:700;color:var(--fg2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.wrow{display:grid;gap:8px;margin-bottom:8px;}
+.wrow-2{grid-template-columns:1fr 1fr;}
+.wrow-3{grid-template-columns:1fr 1fr 1fr;}
+.wf{display:flex;flex-direction:column;gap:3px;}
+.wf label{font-size:.62rem;font-weight:600;color:var(--fg2);text-transform:uppercase;letter-spacing:.4px;}
 
-.ri{border:1.5px solid var(--border);border-radius:5px;padding:6px 7px;
-  font-size:.8rem;width:100%;background:var(--bg2);color:var(--fg);
+.ri{border:1.5px solid var(--border);border-radius:6px;padding:9px 10px;
+  font-size:.85rem;width:100%;background:var(--bg2);color:var(--fg);
   font-family:'IBM Plex Mono',monospace;transition:border-color .15s;}
-.ri:focus{outline:none;border-color:var(--accent);}
+.ri:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(30,79,168,.12);}
 .ri.ok{border-color:var(--ok);background:var(--ok-bg);}
 .ri.err{border-color:var(--err);background:var(--err-bg);}
-.ri-w{width:90px;}.ri-c{width:130px;}.ri-t{width:68px;}.ri-p{width:95px;}.ri-pe{width:75px;}
 
-.btn-del{background:none;border:none;cursor:pointer;color:var(--fg2);
-  font-size:.85rem;padding:4px 6px;border-radius:4px;line-height:1;}
+.btn-del{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;
+  color:var(--fg2);font-size:.85rem;padding:4px 6px;border-radius:4px;line-height:1;}
 .btn-del:hover{color:var(--err);background:var(--err-bg);}
 
 .btn-add{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;
@@ -184,23 +170,10 @@ td.rn{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--fg2);
   </div>
 </div>
 
-<!-- Tabla vagones -->
+<!-- Tarjetas vagones -->
 <div class="card">
   <div class="card-title">Vagones</div>
-  <div class="tbl-wrap">
-    <table id="tbl">
-      <thead><tr>
-        <th style="width:28px">#</th>
-        <th>Vagón</th>
-        <th>Contenedor</th>
-        <th>Tipo</th>
-        <th>Precinto</th>
-        <th>Peso (kg)</th>
-        <th style="width:34px"></th>
-      </tr></thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
+  <div class="wagon-list" id="tbody"></div>
   <button class="btn-add" onclick="addRow()">+ Agregar vagón</button>
   <div class="counter">
     Vagones: <strong id="cnt">0</strong>
@@ -292,31 +265,41 @@ function fmtXLS(raw){
 let rowId=0;
 function addRow(w='',c='',t='40HC',pr='',pe=''){
   const id=++rowId;
-  const tr=document.createElement('tr');
-  tr.id='row-'+id;
-  tr.innerHTML=`
-    <td class="rn">${document.querySelectorAll('#tbody tr').length+1}</td>
-    <td><input class="ri ri-w" id="w${id}" value="${w}" placeholder="795336"
-      maxlength="10" oninput="valW(this)" onblur="valW(this)" onchange="saveSession()"></td>
-    <td><input class="ri ri-c" id="c${id}" value="${c}" placeholder="MSMU6201842"
-      maxlength="15" oninput="valC(this)" onblur="valC(this)" onchange="saveSession()"></td>
-    <td><select class="ri ri-t" id="t${id}" onchange="saveSession()">
-      <option value="40HC" ${t==='40HC'?'selected':''}>40HC</option>
-      <option value="20'" ${t==="20'"?'selected':''}>20'</option>
-      <option value="40'" ${t==="40'"?'selected':''}>40'</option>
-    </select></td>
-    <td><input class="ri ri-p" id="p${id}" value="${pr}" placeholder="2215693"
-      maxlength="20" onchange="saveSession()"></td>
-    <td><input class="ri ri-pe" id="pe${id}" value="${pe}" placeholder="0"
-      maxlength="8" onchange="saveSession()"></td>
-    <td><button class="btn-del" onclick="delRow(${id})">✕</button></td>`;
-  document.getElementById('tbody').appendChild(tr);
+  const n=document.querySelectorAll('#tbody .wcard').length+1;
+  const div=document.createElement('div');
+  div.className='wcard'; div.id='row-'+id;
+  div.innerHTML=`
+    <div class="wcard-num">Vagón <span class="rn">${n}</span></div>
+    <button class="btn-del" onclick="delRow(${id})">✕</button>
+    <div class="wrow wrow-2">
+      <div class="wf"><label>N° Vagón</label>
+        <input class="ri" id="w${id}" value="${w}" placeholder="795336"
+          maxlength="10" oninput="valW(this)" onblur="valW(this)" onchange="saveSession()"></div>
+      <div class="wf"><label>Contenedor</label>
+        <input class="ri" id="c${id}" value="${c}" placeholder="MSMU6201842"
+          maxlength="15" oninput="valC(this)" onblur="valC(this)" onchange="saveSession()"></div>
+    </div>
+    <div class="wrow wrow-3">
+      <div class="wf"><label>Tipo</label>
+        <select class="ri" id="t${id}" onchange="saveSession()">
+          <option value="40HC" ${t==='40HC'?'selected':''}>40HC</option>
+          <option value="20'" ${t==="20'"?'selected':''}>20'</option>
+          <option value="40'" ${t==="40'"?'selected':''}>40'</option>
+        </select></div>
+      <div class="wf"><label>Precinto</label>
+        <input class="ri" id="p${id}" value="${pr}" placeholder="2215693"
+          maxlength="20" onchange="saveSession()"></div>
+      <div class="wf"><label>Peso (kg)</label>
+        <input class="ri" id="pe${id}" value="${pe}" placeholder="0"
+          maxlength="8" onchange="saveSession()"></div>
+    </div>`;
+  document.getElementById('tbody').appendChild(div);
   if(w)valW(document.getElementById('w'+id));
   if(c)valC(document.getElementById('c'+id));
   renum(); upd();
 }
 function delRow(id){document.getElementById('row-'+id)?.remove();renum();upd();saveSession();}
-function renum(){document.querySelectorAll('#tbody tr').forEach((tr,i)=>{tr.querySelector('.rn').textContent=i+1;});}
+function renum(){document.querySelectorAll('#tbody .wcard').forEach((el,i)=>{el.querySelector('.rn').textContent=i+1;});}
 
 function valW(el){
   const v=el.value.trim();
@@ -331,10 +314,10 @@ function valC(el){
   upd();
 }
 function upd(){
-  const rows=document.querySelectorAll('#tbody tr');
+  const rows=document.querySelectorAll('#tbody .wcard');
   let ok=0,co=0;
-  rows.forEach(tr=>{
-    const id=tr.id.replace('row-','');
+  rows.forEach(el=>{
+    const id=el.id.replace('row-','');
     if(document.getElementById('w'+id)?.classList.contains('ok'))ok++;
     if(document.getElementById('c'+id)?.classList.contains('ok'))co++;
   });
@@ -349,7 +332,7 @@ function toggleCod(){
 
 // ── Collect ───────────────────────────────────────────────────────
 function collect(){
-  const rows=document.querySelectorAll('#tbody tr');
+  const rows=document.querySelectorAll('#tbody .wcard');
   const wagons=[];
   rows.forEach(tr=>{
     const id=tr.id.replace('row-','');
@@ -608,7 +591,7 @@ let _saveTimer;
 function saveSession(){
   clearTimeout(_saveTimer);
   _saveTimer=setTimeout(()=>{
-    const rows=document.querySelectorAll('#tbody tr');
+    const rows=document.querySelectorAll('#tbody .wcard');
     const wagons=[];
     rows.forEach(tr=>{
       const id=tr.id.replace('row-','');
@@ -698,7 +681,7 @@ if('serviceWorker' in navigator){
 
 // ── Init ─────────────────────────────────────────────────────────
 document.getElementById('fecha').value=new Date().toISOString().slice(0,10);
-for(let i=0;i<5;i++)addRow();
+addRow();
 updOnline();
 checkRestore();
 </script>
