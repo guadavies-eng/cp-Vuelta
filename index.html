@@ -1,0 +1,704 @@
+<title>Carta de Porte VUELTA</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1e4fa8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CP Vuelta">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --bg:#f5f6fa;--bg2:#fff;--fg:#1a1d2e;--fg2:#5a6080;
+  --border:#dde1f0;--accent:#1e4fa8;--accent2:#e8eef8;
+  --ok:#1a7a45;--ok-bg:#e8f6ee;--err:#b52929;--err-bg:#fceaea;
+  --warn:#8a6000;--warn-bg:#fff5d6;--radius:8px;
+  --shadow:0 1px 4px rgba(30,45,90,.10);
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10131f;--bg2:#181d30;--fg:#dde2f5;--fg2:#8892b8;
+  --border:#252d4a;--accent:#4d80e8;--accent2:#1a2340;
+  --ok:#2eb568;--ok-bg:#0d2e1c;--err:#e05555;--err-bg:#2a0f0f;
+  --warn:#d4a520;--warn-bg:#2a2000;color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#10131f;--bg2:#181d30;--fg:#dde2f5;--fg2:#8892b8;
+  --border:#252d4a;--accent:#4d80e8;--accent2:#1a2340;
+  --ok:#2eb568;--ok-bg:#0d2e1c;--err:#e05555;--err-bg:#2a0f0f;
+  --warn:#d4a520;--warn-bg:#2a2000;color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);
+  padding:20px max(16px,env(safe-area-inset-left));font-size:14px;}
+
+.app-header{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+.app-header h1{font-size:1.05rem;font-weight:600;color:var(--accent);}
+.badge{font-size:.62rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  padding:3px 8px;border-radius:20px;background:var(--accent2);color:var(--accent);}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:16px;margin-bottom:14px;}
+.card-title{font-size:.68rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;
+  color:var(--fg2);margin-bottom:12px;}
+
+.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;}
+.f{display:flex;flex-direction:column;gap:4px;}
+.f label{font-size:.68rem;font-weight:600;color:var(--fg2);}
+.f input,.f select{border:1.5px solid var(--border);border-radius:6px;padding:7px 9px;
+  font-size:.83rem;background:var(--bg2);color:var(--fg);
+  font-family:'IBM Plex Mono',monospace;transition:border-color .15s;}
+.f input:focus,.f select:focus{outline:none;border-color:var(--accent);}
+
+.station-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.stag{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:6px;
+  background:var(--accent2);font-size:.78rem;}
+.stag .dir{font-size:.6rem;font-weight:600;color:var(--fg2);text-transform:uppercase;}
+.stag .name{font-weight:600;color:var(--accent);}
+.stag .code{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--fg2);
+  background:var(--bg);padding:1px 5px;border-radius:4px;border:1px solid var(--border);}
+.btn-sm{background:none;border:1.5px solid var(--border);border-radius:5px;
+  padding:3px 8px;font-size:.65rem;cursor:pointer;color:var(--fg2);font-family:'IBM Plex Sans',sans-serif;}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent);}
+
+.cod-wrap{margin-top:10px;display:none;}
+.hint{font-size:.67rem;color:var(--fg2);margin-top:3px;}
+
+/* table */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:640px;}
+thead th{font-size:.63rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--fg2);padding:6px 6px;border-bottom:2px solid var(--border);
+  white-space:nowrap;text-align:left;background:var(--bg);}
+tbody tr{border-bottom:1px solid var(--border);}
+tbody tr:last-child{border-bottom:none;}
+tbody td{padding:4px 5px;}
+td.rn{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--fg2);
+  text-align:center;width:28px;}
+
+.ri{border:1.5px solid var(--border);border-radius:5px;padding:6px 7px;
+  font-size:.8rem;width:100%;background:var(--bg2);color:var(--fg);
+  font-family:'IBM Plex Mono',monospace;transition:border-color .15s;}
+.ri:focus{outline:none;border-color:var(--accent);}
+.ri.ok{border-color:var(--ok);background:var(--ok-bg);}
+.ri.err{border-color:var(--err);background:var(--err-bg);}
+.ri-w{width:90px;}.ri-c{width:130px;}.ri-t{width:68px;}.ri-p{width:95px;}.ri-pe{width:75px;}
+
+.btn-del{background:none;border:none;cursor:pointer;color:var(--fg2);
+  font-size:.85rem;padding:4px 6px;border-radius:4px;line-height:1;}
+.btn-del:hover{color:var(--err);background:var(--err-bg);}
+
+.btn-add{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;
+  border-radius:6px;border:1.5px dashed var(--border);font-size:.78rem;
+  font-weight:500;cursor:pointer;background:none;color:var(--fg2);
+  font-family:'IBM Plex Sans',sans-serif;margin-top:8px;transition:border-color .15s;}
+.btn-add:hover{border-color:var(--accent);color:var(--accent);}
+
+.counter{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:.75rem;color:var(--fg2);}
+.counter strong{color:var(--fg);font-family:'IBM Plex Mono',monospace;}
+
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;
+  border-radius:6px;border:none;font-size:.82rem;font-weight:600;cursor:pointer;
+  font-family:'IBM Plex Sans',sans-serif;transition:opacity .15s;}
+.btn:hover{opacity:.85;}
+.btn-pdf{background:var(--accent);color:#fff;}
+.btn-xls{background:#1a7a45;color:#fff;}
+
+.info-bar{display:flex;gap:8px;padding:10px 12px;border-radius:6px;
+  background:var(--warn-bg);border:1px solid var(--warn);
+  font-size:.75rem;color:var(--warn);margin-bottom:14px;flex-wrap:wrap;}
+.note{font-size:.72rem;color:var(--fg2);margin-top:10px;}
+
+/* offline / restore bars */
+.offline-bar{display:none;align-items:center;gap:8px;padding:9px 14px;
+  background:#b52929;color:#fff;font-size:.78rem;font-weight:600;
+  border-radius:var(--radius);margin-bottom:12px;}
+.restore-bar{display:none;align-items:center;justify-content:space-between;
+  gap:10px;padding:10px 14px;background:var(--warn-bg);border:1px solid var(--warn);
+  border-radius:var(--radius);margin-bottom:12px;font-size:.78rem;color:var(--warn);
+  flex-wrap:wrap;}
+.save-ind{font-size:.68rem;color:var(--ok);margin-left:auto;font-weight:600;
+  opacity:0;transition:opacity .3s;}
+.save-ind.show{opacity:1;}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:var(--fg);color:var(--bg);padding:9px 18px;border-radius:24px;
+  font-size:.8rem;font-weight:500;opacity:0;transition:opacity .2s;
+  pointer-events:none;z-index:999;white-space:nowrap;}
+#toast.show{opacity:1;}
+#toast.ok{background:var(--ok);}
+#toast.err{background:var(--err);}
+</style>
+
+<div class="offline-bar" id="offline-bar">📵 Sin señal — modo offline activo. Podés seguir cargando normalmente.</div>
+<div class="restore-bar" id="restore-bar"></div>
+
+<div class="app-header">
+  <h1>Carta de Porte</h1>
+  <span class="badge">VUELTA — AGP → Bahía Blanca</span>
+  <span class="save-ind" id="save-ind">✓ Guardado</span>
+</div>
+
+<div class="info-bar">
+  ⚠️ <strong>Código de estación AGP pendiente.</strong> Ingresar cuando Ferrosur lo confirme.
+</div>
+
+<!-- Datos generales -->
+<div class="card">
+  <div class="card-title">Datos generales</div>
+  <div class="fg">
+    <div class="f"><label>Fecha</label>
+      <input type="date" id="fecha"></div>
+    <div class="f"><label>Pedido Ferrosur</label>
+      <input type="text" id="pedido" placeholder="404782" maxlength="20"></div>
+    <div class="f"><label>N° Carta de Porte</label>
+      <input type="text" id="carta" placeholder="0014-00010345" maxlength="20"></div>
+    <div class="f"><label>Hora Carga</label>
+      <input type="text" id="hora-carga" placeholder="1800" maxlength="4" value="1800"></div>
+    <div class="f"><label>Hora Fin</label>
+      <input type="text" id="hora-fin" placeholder="0600" maxlength="4" value="0600"></div>
+  </div>
+
+  <div class="station-bar">
+    <div class="stag">
+      <span class="dir">Origen</span>
+      <span class="name">EST. EMP. NORTE</span>
+      <span class="code" id="cod-orig-disp">—</span>
+      <button class="btn-sm" onclick="toggleCod()">Editar código</button>
+    </div>
+    <div class="stag">
+      <span class="dir">Destino</span>
+      <span class="name">MUELLE BAHÍA BLANCA</span>
+      <span class="code">4236</span>
+    </div>
+  </div>
+  <div class="cod-wrap" id="cod-wrap">
+    <div class="f" style="max-width:200px;margin-top:8px;">
+      <label>Código estación AGP (Ferrosur)</label>
+      <input type="text" id="cod-orig" placeholder="pendiente…" maxlength="10"
+        oninput="document.getElementById('cod-orig-disp').textContent=this.value||'—'">
+    </div>
+    <p class="hint">Dejar vacío hasta que Ferrosur lo confirme.</p>
+  </div>
+</div>
+
+<!-- Tabla vagones -->
+<div class="card">
+  <div class="card-title">Vagones</div>
+  <div class="tbl-wrap">
+    <table id="tbl">
+      <thead><tr>
+        <th style="width:28px">#</th>
+        <th>Vagón</th>
+        <th>Contenedor</th>
+        <th>Tipo</th>
+        <th>Precinto</th>
+        <th>Peso (kg)</th>
+        <th style="width:34px"></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <button class="btn-add" onclick="addRow()">+ Agregar vagón</button>
+  <div class="counter">
+    Vagones: <strong id="cnt">0</strong>
+    Pool ✓: <strong id="cnt-ok">0</strong>
+    Cont. OK: <strong id="cnt-co">0</strong>
+  </div>
+</div>
+
+<!-- Generar -->
+<div class="card">
+  <div class="card-title">Generar documentos</div>
+  <p class="note">Abrí esta URL en una pestaña del navegador (fuera de Claude) para que funcionen las descargas.</p>
+  <div class="btn-row">
+    <button class="btn btn-pdf" onclick="genPDF()">📄 PDF Carta de Porte</button>
+    <button class="btn btn-xls" onclick="genXLS()">📊 Excel (.xls) Ferrosur</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Pool 289 vagones ─────────────────────────────────────────────
+const POOL = new Set([
+  654632,792259,792358,792440,792598,794743,795021,795179,795302,795328,
+  795336,795351,795716,795831,795864,796037,796276,796656,792275,792655,
+  794545,794727,795369,795815,796300,796631,792309,794636,794719,792036,
+  792135,794966,794990,795708,795971,796029,796102,795534,792507,794610,
+  794685,795039,795062,795872,795997,796086,796508,635573,654285,792242,
+  792689,794537,794552,794750,794909,794917,795237,795575,795948,796011,
+  796110,796318,796490,796524,796615,792754,795104,795161,795468,795922,
+  796136,796235,796375,796383,796466,796425,792747,794701,795245,795518,
+  796193,792044,792168,795781,461376,796540,796284,796367,795625,795120,
+  792002,792382,795112,830455,797696,938753,797803,798173,828426,933457,
+  802983,830208,933762,935379,803239,931428,830422,813576,798033,830182,
+  803858,830497,803510,802033,939108,797449,813378,803114,796474,937334,
+  938456,927673,802009,933952,939017,933754,938761,927616,937094,798108,
+  927699,927632,938837,797142,931352,931337,938738,927053,797431,802322,
+  916478,797977,931493,933002,938696,798132,803833,803528,937797,796706,
+  797506,802017,812164,802546,934356,815068,803072,797480,938613,961706,
+  938670,936922,927681,797779,797647,932624,803452,931386,936807,927608,
+  938951,798264,938522,797878,935007,803437,935114,935403,931360,936369,
+  939041,931394,797951,931295,931279,462101,796771,939058,828392,796946,
+  935056,933606,821256,961797,927657,802272,938985,798009,803031,797514,
+  797290,934000,932699,938688,936831,931436,796987,927624,938811,830133,
+  931543,797464,798165,796599,797811,961813,939074,933234,938589,938969,
+  961789,803718,931592,797829,802835,797019,931378,830109,798066,821140,
+  931568,934778,830489,796813,938845,931402,796797,803742,797613,931246,
+  803312,927939,938365,931238,939900,798215,815266,815688,812271,938571,
+  931477,792390,798272,797738,803841,935700,830448,795393,797407,935585,
+  797605,797308,830158,797894,797860,796805,938704,803684,830562,797936,
+  931519,931303,938712,931527,802538,796821,937318,830521,938530,802280,
+  795096,797746,795666,938654,830141,938563,802892,938159,795146,815142,
+  797167,938662,798157,927061,797084,830463,938894,796888,933440,927665
+].map(Number));
+
+// ── ISO 6346 ─────────────────────────────────────────────────────
+const ALPHA='0123456789A_BCDEFGHIJK_LMNOPQRSTU_VWXYZ';
+function isoCheck(s){
+  s=s.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(s.length<10||s.length>11)return null;
+  const base=s.slice(0,10); let sum=0;
+  for(let i=0;i<10;i++){const v=ALPHA.indexOf(base[i]);if(v<0)return null;sum+=v*Math.pow(2,i);}
+  const chk=(sum%11)%10;
+  if(s.length===11)return parseInt(s[10])===chk?chk:null;
+  return chk;
+}
+function parseCont(raw){
+  const s=raw.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(s.length<10)return null;
+  if(!/^[A-Z]{4}\d{6,7}$/.test(s))return null;
+  const base=s.slice(0,10);
+  const chk=isoCheck(base);
+  if(chk===null)return null;
+  if(s.length===11&&parseInt(s[10])!==chk)return null;
+  return{base,chk};
+}
+// Formato para PDF: "MSMU 620184-2"
+function fmtPDF(raw){
+  const p=parseCont(raw);if(!p)return raw.toUpperCase();
+  return p.base.slice(0,4)+' '+p.base.slice(4,10)+'-'+p.chk;
+}
+// Formato para XLS Auxiliar4: "MSMU6201842" (sin separadores)
+function fmtXLS(raw){
+  const p=parseCont(raw);if(!p)return raw.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  return p.base+p.chk;
+}
+
+// ── Rows ─────────────────────────────────────────────────────────
+let rowId=0;
+function addRow(w='',c='',t='40HC',pr='',pe=''){
+  const id=++rowId;
+  const tr=document.createElement('tr');
+  tr.id='row-'+id;
+  tr.innerHTML=`
+    <td class="rn">${document.querySelectorAll('#tbody tr').length+1}</td>
+    <td><input class="ri ri-w" id="w${id}" value="${w}" placeholder="795336"
+      maxlength="10" oninput="valW(this)" onblur="valW(this)" onchange="saveSession()"></td>
+    <td><input class="ri ri-c" id="c${id}" value="${c}" placeholder="MSMU6201842"
+      maxlength="15" oninput="valC(this)" onblur="valC(this)" onchange="saveSession()"></td>
+    <td><select class="ri ri-t" id="t${id}" onchange="saveSession()">
+      <option value="40HC" ${t==='40HC'?'selected':''}>40HC</option>
+      <option value="20'" ${t==="20'"?'selected':''}>20'</option>
+      <option value="40'" ${t==="40'"?'selected':''}>40'</option>
+    </select></td>
+    <td><input class="ri ri-p" id="p${id}" value="${pr}" placeholder="2215693"
+      maxlength="20" onchange="saveSession()"></td>
+    <td><input class="ri ri-pe" id="pe${id}" value="${pe}" placeholder="0"
+      maxlength="8" onchange="saveSession()"></td>
+    <td><button class="btn-del" onclick="delRow(${id})">✕</button></td>`;
+  document.getElementById('tbody').appendChild(tr);
+  if(w)valW(document.getElementById('w'+id));
+  if(c)valC(document.getElementById('c'+id));
+  renum(); upd();
+}
+function delRow(id){document.getElementById('row-'+id)?.remove();renum();upd();saveSession();}
+function renum(){document.querySelectorAll('#tbody tr').forEach((tr,i)=>{tr.querySelector('.rn').textContent=i+1;});}
+
+function valW(el){
+  const v=el.value.trim();
+  if(!v){el.className='ri ri-w';upd();return;}
+  el.className='ri ri-w '+(POOL.has(parseInt(v))?'ok':'err');
+  upd();
+}
+function valC(el){
+  const v=el.value.trim();
+  if(!v){el.className='ri ri-c';upd();return;}
+  el.className='ri ri-c '+(parseCont(v)?'ok':'err');
+  upd();
+}
+function upd(){
+  const rows=document.querySelectorAll('#tbody tr');
+  let ok=0,co=0;
+  rows.forEach(tr=>{
+    const id=tr.id.replace('row-','');
+    if(document.getElementById('w'+id)?.classList.contains('ok'))ok++;
+    if(document.getElementById('c'+id)?.classList.contains('ok'))co++;
+  });
+  document.getElementById('cnt').textContent=rows.length;
+  document.getElementById('cnt-ok').textContent=ok;
+  document.getElementById('cnt-co').textContent=co;
+}
+function toggleCod(){
+  const w=document.getElementById('cod-wrap');
+  w.style.display=w.style.display==='none'||!w.style.display?'block':'none';
+}
+
+// ── Collect ───────────────────────────────────────────────────────
+function collect(){
+  const rows=document.querySelectorAll('#tbody tr');
+  const wagons=[];
+  rows.forEach(tr=>{
+    const id=tr.id.replace('row-','');
+    wagons.push({
+      wagon:(document.getElementById('w'+id)?.value||'').trim(),
+      container:(document.getElementById('c'+id)?.value||'').trim(),
+      tipo:document.getElementById('t'+id)?.value||'40HC',
+      precinto:(document.getElementById('p'+id)?.value||'').trim(),
+      peso:(document.getElementById('pe'+id)?.value||'').trim()||'0',
+    });
+  });
+  return{
+    fecha:document.getElementById('fecha').value,
+    pedido:document.getElementById('pedido').value.trim(),
+    carta:document.getElementById('carta').value.trim(),
+    horaCarga:document.getElementById('hora-carga').value.trim()||'1800',
+    horaFin:document.getElementById('hora-fin').value.trim()||'0600',
+    origenCod:(document.getElementById('cod-orig')?.value||'').trim()||'',
+    wagons
+  };
+}
+function validate(d){
+  if(!d.fecha){toast('Ingresá la fecha','err');return false;}
+  if(!d.pedido){toast('Ingresá el pedido','err');return false;}
+  if(!d.carta){toast('Ingresá la carta de porte','err');return false;}
+  if(!d.wagons.length){toast('Agregá al menos un vagón','err');return false;}
+  for(const w of d.wagons){
+    if(!w.wagon){toast('Hay filas con vagón vacío','err');return false;}
+  }
+  return true;
+}
+
+// ── Helpers de fecha ─────────────────────────────────────────────
+function fmtFechaPDF(iso){
+  const p=iso.split('-');
+  return p[2]+'/'+p[1]+'/'+p[0]; // dd/mm/yyyy
+}
+// Para XLS Fecha: Excel date serial or string "d/m/yyyy"
+function fmtFechaXLS(iso){
+  const p=iso.split('-');
+  return parseInt(p[2])+'/'+parseInt(p[1])+'/'+p[0]; // sin ceros
+}
+function pad2(n){return String(n).padStart(2,'0');}
+
+// ── Helpers PDF ───────────────────────────────────────────────────
+function fmtFechaSinCeros(iso){
+  // "2026-11-03" → "3/11/2026"
+  const [y,m,d]=iso.split('-');
+  return parseInt(d)+'/'+parseInt(m)+'/'+y;
+}
+function fmtHora(h){
+  // "1800" → "18:00"
+  if(/^\d{4}$/.test(h)) return h.slice(0,2)+':'+h.slice(2);
+  return h;
+}
+
+// ── PDF (formato Ferrosur exacto) ────────────────────────────────
+function genPDF(){
+  const d=collect(); if(!validate(d))return;
+  if(typeof window.jspdf==='undefined'){toast('jsPDF cargando, reintentá','err');return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+  const W=210;
+  const f=fmtFechaSinCeros(d.fecha);
+
+  // ── TOP RIGHT: "X" + fecha + pedido ──────────────────────────
+  doc.setFont('Courier','normal');
+  doc.setFontSize(9);
+  doc.text('X', W-8, 5);
+  doc.setFontSize(11);
+  doc.text(f, W-8, 11, {align:'right'});
+  doc.text(d.pedido, W-8, 17, {align:'right'});
+
+  // ── TOP LEFT: código estación origen ─────────────────────────
+  doc.setFontSize(9);
+  if(d.origenCod) doc.text(d.origenCod, 14, 22);
+
+  // ── FILA ORIGEN ──────────────────────────────────────────────
+  doc.setFontSize(9);
+  doc.text('EST. EMP. NORTE', 14, 28);
+  doc.text('Buenos Aires', 72, 28);
+
+  // ── FILA DESTINO ─────────────────────────────────────────────
+  doc.text('MUELLE BAHIA BLANCA', 14, 34);
+  doc.text('MUELLE BAHIA BLANCA', 72, 34);
+  doc.text(fmtHora(d.horaCarga), 116, 34);
+  doc.text(f, 127, 34);
+  doc.text(fmtHora(d.horaFin), 149, 34);
+
+  // ── BLOQUE CLIENTE (3 líneas como en formato Ferrosur) ──────────
+  doc.setFontSize(8);
+  const cX=21, cDirX=72, cCiuX=130, cCuitX=162;
+  doc.text('Dow Argentina',     cX,    40);
+  doc.text('MADERO 900 7PISO',  cDirX, 40);
+  doc.text('CAP. FED',          cCiuX, 40);
+  doc.text('30-56025419-5',     cCuitX,40);
+  doc.text('Dow Argentina',     cX,    44.5);
+  doc.text('MADERO 900 7PISO',  cDirX, 44.5);
+  doc.text('CAP. FED',          cCiuX, 44.5);
+  doc.text('30-56025419-5',     cCuitX,44.5);
+  doc.text('Dow Argentina',     cX,    49);
+  doc.text('MADERO 900 7PISO',  cDirX, 49);
+  doc.text('CAP. FED',          cCiuX, 49);
+  doc.text('30-56025419-5',     cCuitX,49);
+
+  // ── FERROSUR ROCA + 0 KG ─────────────────────────────────────
+  doc.setFontSize(9);
+  doc.text('Ferrosur Roca', 58, 57);
+  doc.text('0 Kg.', 92, 63);
+
+  // ── TABLA DE VAGONES ─────────────────────────────────────────
+  // Columnas exactas del PDF Ferrosur (mm desde borde izquierdo):
+  // C1 Vagón:      14.8mm  (bold)
+  // C2 Tipo:       28.8mm  (bold — equivalente a Aux3 en IDA)
+  // C3 Contenedor: 64.2mm  (bold)
+  // C4 Precinto:   93.9mm  (normal)
+  // C5 Peso:      121.9mm  (normal)
+  // C6 —:         141.3mm  (normal, vacío para VUELTA)
+  const cx=[14.8, 28.8, 64.2, 93.9, 121.9, 141.3];
+  const rowH=4.2;
+  const startY=71;
+  const maxRows=Math.min(d.wagons.length,35);
+
+  doc.setFontSize(8.5);
+  for(let i=0;i<maxRows;i++){
+    const w=d.wagons[i];
+    const y=startY+i*rowH;
+    const cont=w.container?fmtXLS(w.container):'';
+
+    // Columnas bold
+    doc.setFont('Courier','bold');
+    doc.text(w.wagon,  cx[0], y);
+    // cx[1]: vacío para VUELTA (Ferrosur genera Aux3 internamente)
+    if(cont) doc.text(cont, cx[2], y);
+
+    // Columnas normal
+    doc.setFont('Courier','normal');
+    if(w.precinto) doc.text(w.precinto, cx[3], y);
+    doc.text(w.peso||'0', cx[4], y);
+    // cx[5] vacío para VUELTA
+  }
+
+  // ── FOOTER ───────────────────────────────────────────────────
+  doc.setFont('Courier','bold');
+  doc.setFontSize(8);
+  doc.text('DOW RESTRICTED - For internal use only', W/2, 273, {align:'center'});
+
+  const fn='CPV_'+d.pedido+'_'+d.fecha.replace(/-/g,'')+'.pdf';
+  try{doc.save(fn);toast('✅ PDF descargado');}
+  catch(e){toast('Abrí en pestaña del navegador','err');}
+}
+
+// ── XLS (SheetJS) ────────────────────────────────────────────────
+function genXLS(){
+  const d=collect(); if(!validate(d))return;
+  if(typeof XLSX==='undefined'){toast('SheetJS cargando, reintentá','err');return;}
+
+  const fCSV=fmtFechaXLS(d.fecha);
+  // Nro_CartaPorte: usar tal como viene (el sistema Ferrosur lo toma así)
+  const nroCP=d.carta;
+
+  // Auxiliar7 y descripción por tipo
+  function tipoInfo(tipo){
+    if(tipo==="20'")  return{aux7:'F981C2',aux5:'X20',aux6:'20',desc:'CONTENEDOR VACIO 20',bultos:0};
+    if(tipo==="40'")  return{aux7:'F981C4',aux5:'X40',aux6:'40',desc:'CONTENEDOR VACIO 40',bultos:0};
+    return            {aux7:'F981C4',aux5:'X40HC',aux6:'HC',desc:'CONTENEDOR VACIO 40HC',bultos:0};
+  }
+
+  const HEADERS=[
+    'Nro_CartaPorte','Empresa_Codigo','Tipo_CartaPorte','Nro_Pedido','Fecha','Nro_Orden',
+    'Procedencia','Destino','Lugar_Carga','Ferrocarril',
+    'Fecha_Carga','Hora_Carga','Fecha_Fin','Hora_Fin',
+    'Lugar_Descarga','Cod_Cliente','Cod_Cargador','Cod_Consignatario',
+    'Observaciones','Peso_Aforo_Cabecera','Dada_de_Baja',
+    'Nro_Vagon','Nro_Bultos','Descripcion_Carga','Precinto_Color','Peso_Aforo',
+    'Auxiliar1','Auxiliar2','Auxiliar3','Auxiliar4','Auxiliar5','Auxiliar6','Auxiliar7'
+  ];
+
+  const rows=d.wagons.map(w=>{
+    const ti=tipoInfo(w.tipo);
+    const cont=w.container?fmtXLS(w.container):'';
+    return[
+      nroCP,          // Nro_CartaPorte
+      '1',            // Empresa_Codigo
+      'I',            // Tipo_CartaPorte
+      d.pedido,       // Nro_Pedido
+      fCSV,           // Fecha
+      nroCP,          // Nro_Orden
+      d.origenCod||'',// Procedencia (código AGP pendiente)
+      '4236',         // Destino
+      'EST. EMP. NORTE',// Lugar_Carga
+      'Ferrosur Roca',// Ferrocarril
+      fCSV,           // Fecha_Carga
+      d.horaCarga,    // Hora_Carga
+      fCSV,           // Fecha_Fin
+      d.horaFin,      // Hora_Fin
+      'MUELLE BAHIA BLANCA',// Lugar_Descarga
+      '100005003',    // Cod_Cliente
+      '100005003',    // Cod_Cargador
+      '100005003',    // Cod_Consignatario
+      '0',            // Observaciones
+      '0',            // Peso_Aforo_Cabecera
+      'False',        // Dada_de_Baja
+      w.wagon,        // Nro_Vagon
+      String(ti.bultos), // Nro_Bultos
+      ti.desc,        // Descripcion_Carga
+      w.precinto,     // Precinto_Color
+      w.peso!=='0'?w.peso:'1000', // Peso_Aforo
+      '',             // Auxiliar1
+      '',             // Auxiliar2
+      '',             // Auxiliar3
+      cont,           // Auxiliar4 (contenedor sin separadores)
+      ti.aux5,        // Auxiliar5 (X40HC / X20 / X40)
+      ti.aux6,        // Auxiliar6 (HC / 20 / 40)
+      ti.aux7         // Auxiliar7 (F981C4 / F981C2)
+    ];
+  });
+
+  const ws=XLSX.utils.aoa_to_sheet([HEADERS,...rows]);
+
+  // Ancho de columnas
+  ws['!cols']=[
+    {wch:16},{wch:8},{wch:8},{wch:10},{wch:12},{wch:16},
+    {wch:10},{wch:8},{wch:20},{wch:14},
+    {wch:12},{wch:8},{wch:12},{wch:8},
+    {wch:22},{wch:12},{wch:12},{wch:12},
+    {wch:10},{wch:10},{wch:10},
+    {wch:10},{wch:8},{wch:30},{wch:16},{wch:10},
+    {wch:10},{wch:10},{wch:10},{wch:14},{wch:8},{wch:6},{wch:8}
+  ];
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'CartaPorte');
+
+  const fn='CPV_'+d.pedido+'_'+d.fecha.replace(/-/g,'')+'.xls';
+  try{
+    XLSX.writeFile(wb, fn);
+    toast('✅ Excel descargado');
+  }catch(e){
+    toast('Abrí en pestaña del navegador','err');
+  }
+}
+
+// ── Toast ────────────────────────────────────────────────────────
+let _tt;
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='show '+(type==='err'?'err':'ok');
+  clearTimeout(_tt);_tt=setTimeout(()=>el.className='',3200);
+}
+
+// ── AUTO-GUARDADO ─────────────────────────────────────────────────
+const SAVE_KEY='cpv_session';
+let _saveTimer;
+
+function saveSession(){
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>{
+    const rows=document.querySelectorAll('#tbody tr');
+    const wagons=[];
+    rows.forEach(tr=>{
+      const id=tr.id.replace('row-','');
+      wagons.push({
+        wagon:document.getElementById('w'+id)?.value||'',
+        container:document.getElementById('c'+id)?.value||'',
+        tipo:document.getElementById('t'+id)?.value||'40HC',
+        precinto:document.getElementById('p'+id)?.value||'',
+        peso:document.getElementById('pe'+id)?.value||'',
+      });
+    });
+    const s={
+      fecha:document.getElementById('fecha').value,
+      pedido:document.getElementById('pedido').value,
+      carta:document.getElementById('carta').value,
+      horaCarga:document.getElementById('hora-carga').value,
+      horaFin:document.getElementById('hora-fin').value,
+      codOrig:document.getElementById('cod-orig')?.value||'',
+      wagons,
+      savedAt:new Date().toISOString()
+    };
+    try{localStorage.setItem(SAVE_KEY,JSON.stringify(s));}catch(e){}
+    const ind=document.getElementById('save-ind');
+    ind.classList.add('show');
+    setTimeout(()=>ind.classList.remove('show'),2000);
+  },800);
+}
+
+function checkRestore(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return;
+    const s=JSON.parse(raw);
+    if(!s.wagons?.length&&!s.pedido)return;
+    const d=new Date(s.savedAt);
+    const ts=d.toLocaleDateString('es-AR')+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    const bar=document.getElementById('restore-bar');
+    bar.innerHTML=`<span>📋 Sesión guardada (${ts}, ${s.wagons.length} vagón/es) — ¿Retomar?</span>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button onclick="doRestore()" style="background:var(--warn);color:#fff;border:none;padding:5px 14px;border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:600">Retomar</button>
+        <button onclick="discardRestore()" style="background:none;border:1.5px solid var(--border);padding:5px 12px;border-radius:5px;cursor:pointer;font-size:.78rem;color:var(--fg2)">Descartar</button>
+      </div>`;
+    bar.style.display='flex';
+    window._pendingSession=s;
+  }catch(e){}
+}
+
+function doRestore(){
+  const s=window._pendingSession; if(!s)return;
+  document.getElementById('fecha').value=s.fecha||'';
+  document.getElementById('pedido').value=s.pedido||'';
+  document.getElementById('carta').value=s.carta||'';
+  document.getElementById('hora-carga').value=s.horaCarga||'1800';
+  document.getElementById('hora-fin').value=s.horaFin||'0600';
+  if(s.codOrig){
+    document.getElementById('cod-orig').value=s.codOrig;
+    document.getElementById('cod-orig-disp').textContent=s.codOrig;
+  }
+  document.getElementById('tbody').innerHTML='';
+  rowId=0;
+  s.wagons.forEach(w=>addRow(w.wagon,w.container,w.tipo,w.precinto,w.peso));
+  document.getElementById('restore-bar').style.display='none';
+  toast('✅ Sesión retomada');
+}
+
+function discardRestore(){
+  try{localStorage.removeItem(SAVE_KEY);}catch(e){}
+  document.getElementById('restore-bar').style.display='none';
+}
+
+// Hook auto-save en campos generales
+['fecha','pedido','carta','hora-carga','hora-fin'].forEach(id=>{
+  document.getElementById(id)?.addEventListener('input',saveSession);
+});
+
+// ── OFFLINE INDICATOR ─────────────────────────────────────────────
+function updOnline(){
+  document.getElementById('offline-bar').style.display=navigator.onLine?'none':'flex';
+}
+window.addEventListener('online',updOnline);
+window.addEventListener('offline',updOnline);
+
+// ── SERVICE WORKER ────────────────────────────────────────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+document.getElementById('fecha').value=new Date().toISOString().slice(0,10);
+for(let i=0;i<5;i++)addRow();
+updOnline();
+checkRestore();
+</script>

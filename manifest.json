@@ -1,0 +1,13 @@
+{
+  "name": "Carta de Porte VUELTA",
+  "short_name": "CP Vuelta",
+  "description": "Genera carta de porte y Excel para operación VUELTA AGP → Bahía Blanca",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f6fa",
+  "theme_color": "#1e4fa8",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
